@@ -76,10 +76,7 @@ if uploaded_file is not None:
         final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0])
         final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1])
         final_df = final_df.dropna(subset=['latitude', 'longitude'])
-        m = folium.Map()
-        min_lat, max_lat = final_df['latitude'].min(), final_df['latitude'].max()
-        min_lon, max_lon = final_df['longitude'].min(), final_df['longitude'].max()
-        m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
+        m = folium.Map(location=[final_df['latitude'].mean(), final_df['longitude'].mean()], zoom_start=10)
         
         # Add markers to the map
         for index, row in final_df.iterrows():
