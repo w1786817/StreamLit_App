@@ -90,7 +90,11 @@ if uploaded_file is not None:
         m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
 
         # Create and add the HeatMap
-        HeatMap(heat_data, radius=8).add_to(m)
+        for idx, row in final_df.iterrows():
+            folium.Marker(
+                location=[row['latitude'], row['longitude']],
+                popup=f"Latitude: {row['latitude']}, Longitude: {row['longitude']}"
+            ).add_to(m)
 
         # Streamlit title
         st.title("Twitter Data Heatmap")
