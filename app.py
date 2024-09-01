@@ -88,7 +88,7 @@ if uploaded_file is not None:
         st.title("Tweet Locations Map")
 
         # Display the map in the Streamlit app
-        st_folium(m)
+        st_folium(m, key="unique_key_for_map"))
 
         # Sentiment Analysis
         st.write("")
