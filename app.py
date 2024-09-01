@@ -88,13 +88,7 @@ if uploaded_file is not None:
 
         # Adjust the map to fit all coordinates
         m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
-
-        # Create and add the HeatMap
-        for lat, lon in heat_data:
-            folium.Marker(
-                location=[lat, lon],
-                popup=f"Latitude: {lat}, Longitude: {lon}"
-            ).add_to(m)
+        Map(heat_data).add_to(m)
 
         # Streamlit title
         st.title("Twitter Data Heatmap")
