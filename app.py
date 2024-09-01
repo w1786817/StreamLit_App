@@ -91,9 +91,6 @@ if uploaded_file is not None:
 
         # Display the map in the Streamlit app
         st_folium(m, width=700, height=500)
-
-    except Exception as e:
-        st.error(f"An error occurred while processing the file: {e}")
     
         # Sentiment Analysis
         st.write("")
