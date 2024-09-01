@@ -80,7 +80,7 @@ if uploaded_file is not None:
             folium.Marker(location=[lat, lon]).add_to(m) 
         st.title("Twitter Data Heatmap")
         st_folium(m)
-        st.write("success")
+        st.write("Zoom Out App to see all locations")
         # Sentiment Analysis
         st.write("")
         st.header("Sentiment Analysis")
