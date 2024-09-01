@@ -15,8 +15,6 @@ import string
 from nltk.corpus import wordnet as wn
 import ast
 
-# Use Streamlit cache to avoid downloading multiple times
-@st.cache_data
 nltk.download('vader_lexicon')
 nltk.download('punkt')
 nltk.download('stopwords')
