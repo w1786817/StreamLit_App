@@ -90,10 +90,10 @@ if uploaded_file is not None:
         m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
 
         # Create and add the HeatMap
-        for idx, row in final_df.iterrows():
+        for lat, lon in heat_data:
             folium.Marker(
-                location=[row['latitude'], row['longitude']],
-                popup=f"Latitude: {row['latitude']}, Longitude: {row['longitude']}"
+                location=[lat, lon],
+                popup=f"Latitude: {lat}, Longitude: {lon}"
             ).add_to(m)
 
         # Streamlit title
