@@ -75,14 +75,8 @@ if uploaded_file is not None:
         # Extract latitude and longitude
         final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0])
         final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1])
-
-        # Create a base map centered around the mean latitude and longitude
         m = folium.Map(location=[final_df['latitude'].mean(), final_df['longitude'].mean()], zoom_start=10)
-
-        # Prepare data for the heatmap
         heat_data = list(zip(final_df['latitude'], final_df['longitude']))
-
-        # Create and add the HeatMap
         HeatMap(heat_data, radius=8).add_to(m)
 
         # Streamlit title
@@ -90,6 +84,7 @@ if uploaded_file is not None:
 
         # Display the map in the Streamlit app
         st_folium(m, width=700, height=500)
+        st.write("success")
 
         # Sentiment Analysis
         st.write("")
