@@ -72,29 +72,34 @@ if uploaded_file is not None:
         st.write("")
         st.header("Geospatial Analysis with Time-Based Heatmap")
 
-        # Extract latitude and longitude
+        # Step 1: Extract latitude and longitude ensuring safe handling of missing or malformed data
         final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0])
         final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1])
 
-        map_center = [final_df['latitude'].mean(), final_df['longitude'].mean()]
-        m = folium.Map(location=map_center, zoom_start=6)
+        # Create an expander to collapse the map by default
+        with st.expander("Show Map", expanded=False):
+            # Check if DataFrame is not empty and contains necessary columns
+            if not final_df.empty and 'latitude' in final_df.columns and 'longitude' in final_df.columns:
+                
+                # Step 3: Create a Folium map centered at the average coordinates of the DataFrame
+                map_center = [final_df['latitude'].mean(), final_df['longitude'].mean()]
+                m = folium.Map(location=map_center, zoom_start=6)
 
-        # Add markers to the map for each tweet in the DataFrame
-        for lat, lon in zip(final_df['latitude'], final_df['longitude']):
-            if pd.notna(lat) and pd.notna(lon):  # Ensure latitude and longitude are valid numbers
-                folium.CircleMarker(
-                        location=[lat, lon],
-                        radius=5,  # Adjust the radius as needed
-                        color='blue',
-                        fill=True,
-                        fill_color='blue'
-                ).add_to(m)
+                # Add circle markers to the map for each tweet in the DataFrame
+                for lat, lon in zip(final_df['latitude'], final_df['longitude']):
+                    if pd.notna(lat) and pd.notna(lon):  # Ensure latitude and longitude are valid numbers
+                        folium.CircleMarker(
+                            location=[lat, lon],
+                            radius=5,  # Adjust the radius as needed
+                            color='blue',
+                            fill=True,
+                            fill_color='blue'
+                        ).add_to(m)
 
-        # Streamlit title
-        st.title("Tweet Locations Map")
-
-        # Display the map in the Streamlit app
-        st_folium(m, width=700, height=400, key="unique_key_for_map")
+                # Display the map in the Streamlit app with adjusted height
+                st_folium(m, width=700, height=400, key="unique_key_for_map")
+            else:
+                st.write("No data available to display on the map.")
 
         # Sentiment Analysis
         st.write("")
