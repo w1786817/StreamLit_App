@@ -76,8 +76,8 @@ if uploaded_file is not None:
         final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0])
         final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1])
         m = folium.Map(location=[final_df['latitude'].mean(), final_df['longitude'].mean()], zoom_start=10)
-        heat_data = list(zip(final_df['latitude'], final_df['longitude']))
-        HeatMap(heat_data, radius=8).add_to(m)
+                for lat, lon in zip(final_df['latitude'], final_df['longitude']):
+                    folium.Marker(location=[lat, lon]).add_to(m) 
         st.title("Twitter Data Heatmap")
         st_folium(m)
         st.write("success")
