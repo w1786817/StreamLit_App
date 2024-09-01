@@ -1,0 +1,13 @@
+streamlit
+pandas
+numpy
+nltk
+folium
+scikit-learn
+spacy
+matplotlib
+seaborn
+joblib
+streamlit-folium
+torch
+transformers
