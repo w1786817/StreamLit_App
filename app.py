@@ -86,6 +86,9 @@ if uploaded_file is not None:
                 popup=f"Latitude: {row['latitude']}, Longitude: {row['longitude']}"
             ).add_to(m)
 
+        # Streamlit title for the map
+        st.title("Twitter Data Map with Markers")
+
         # Display the map in the Streamlit app
         st_folium(m, width=700, height=500)
     
