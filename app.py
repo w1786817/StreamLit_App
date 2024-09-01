@@ -71,26 +71,32 @@ if uploaded_file is not None:
         # Geospatial Analysis with Time-Based Heatmap
         st.write("")
         st.header("Geospatial Analysis with Time-Based Heatmap")
-        final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0] if isinstance(x, list) else None)
-        final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1] if isinstance(x, list) else None)
+
+        # Updated to handle potential missing data
+        final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0] if isinstance(x, list) and len(x) > 0 else None)
+        final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1] if isinstance(x, list) and len(x) > 1 else None)
         final_df = final_df.dropna(subset=['latitude', 'longitude'])
 
-        # Convert 'created_at' to datetime
-        date_format = '%a %b %d %H:%M:%S %z %Y'
-        final_df['created_at'] = pd.to_datetime(final_df['created_at'], format=date_format)
+        # Check if the final_df contains valid latitude and longitude
+        if final_df.empty:
+            st.warning("No valid geospatial data available for creating the heatmap.")
+        else:
+            # Convert 'created_at' to datetime
+            date_format = '%a %b %d %H:%M:%S %z %Y'
+            final_df['created_at'] = pd.to_datetime(final_df['created_at'], format=date_format, errors='coerce')
 
-        # Prepare data for HeatMapWithTime
-        heat_data = []
-        for time, frame in final_df.groupby('created_at'):
-            heat_data.append([[row['latitude'], row['longitude']] for index, row in frame.iterrows()])
+            # Prepare data for HeatMapWithTime
+            heat_data = []
+            for time, frame in final_df.groupby('created_at'):
+                heat_data.append([[row['latitude'], row['longitude']] for index, row in frame.iterrows()])
 
-        map_center = [final_df['latitude'].mean(), final_df['longitude'].mean()]
-        m = folium.Map(location=map_center, zoom_start=6)
+            map_center = [final_df['latitude'].mean(), final_df['longitude'].mean()]
+            m = folium.Map(location=map_center, zoom_start=6)
 
-        # Add HeatMapWithTime
-        HeatMapWithTime(heat_data, radius=8, auto_play=True, max_opacity=0.8).add_to(m)
+            # Add HeatMapWithTime
+            HeatMapWithTime(heat_data, radius=8, auto_play=True, max_opacity=0.8).add_to(m)
 
-        st_folium(m, width=700, height=500)
+            st_folium(m, width=700, height=500)
 
         # Sentiment Analysis
         st.write("")
