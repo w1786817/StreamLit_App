@@ -81,8 +81,8 @@ if uploaded_file is not None:
 
         # Add markers to the map for each tweet in the DataFrame
         for lat, lon in zip(final_df['latitude'], final_df['longitude']):
-            pd.notna(lat) and pd.notna(lon):  # Ensure latitude and longitude are valid numbers
-                folium.Marker(
+            if pd.notna(lat) and pd.notna(lon):  # Ensure latitude and longitude are valid numbers
+                folium.CircleMarker(
                         location=[lat, lon],
                         radius=5,  # Adjust the radius as needed
                         color='blue',
