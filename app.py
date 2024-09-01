@@ -68,28 +68,32 @@ if uploaded_file is not None:
         st.write(final_df.head())
         st.write(final_df.columns)
 
-        # Geospatial Analysis with Time-Based Heatmap
+        # Geospatial Analysis with Map Markers
         st.write("")
-        st.header("Geospatial Analysis with Time-Based Heatmap")
+        st.header("Geospatial Analysis with Map Markers")
 
-        # Step 1: Extract latitude and longitude ensuring safe handling of missing or malformed data
+        # Extract latitude and longitude
         final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0])
         final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1])
 
-        def display_folium_map(df):
-            # Center the map around the average location
-            map_center = [df['latitude'].mean(), df['longitude'].mean()]
-            map_folium = folium.Map(location=map_center, zoom_start=10)
+        # Create a base map centered around the mean latitude and longitude
+        m = folium.Map(location=[final_df['latitude'].mean(), final_df['longitude'].mean()], zoom_start=10)
 
-            # Add markers to the map
-            for _, row in df.iterrows():
-                folium.Marker(
-                    location=[row['latitude'], row['longitude']],
-                    popup=f"Location: ({row['latitude']}, {row['longitude']})"
-                ).add_to(map_folium)
+        # Add a marker for each location in the DataFrame
+        for idx, row in final_df.iterrows():
+            folium.Marker(
+                location=[row['latitude'], row['longitude']],
+                popup=f"Latitude: {row['latitude']}, Longitude: {row['longitude']}"
+            ).add_to(m)
 
-            # Use streamlit_folium to display the Folium map
-            st_folium(map_folium, width=700, height=500)
+        # Streamlit title for the map
+        st.title("Twitter Data Map with Markers")
+
+        # Display the map in the Streamlit app
+        st_folium(m, width=700, height=500)
+
+    except Exception as e:
+        st.error(f"An error occurred while processing the file: {e}")
     
         # Sentiment Analysis
         st.write("")
