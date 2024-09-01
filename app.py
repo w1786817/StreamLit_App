@@ -76,9 +76,6 @@ if uploaded_file is not None:
         final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0])
         final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1])
 
-        # Create a base map centered around the mean latitude and longitude
-        m = folium.Map(location=[final_df['latitude'].mean(), final_df['longitude'].mean()], zoom_start=10)
-
         # Prepare data for the heatmap
         heat_data = list(zip(final_df['latitude'], final_df['longitude']))
 
