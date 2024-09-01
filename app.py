@@ -81,17 +81,20 @@ if uploaded_file is not None:
 
         # Add markers to the map for each tweet in the DataFrame
         for lat, lon in zip(final_df['latitude'], final_df['longitude']):
-            if pd.notna(lat) and pd.notna(lon):  # Ensure latitude and longitude are valid numbers
+            pd.notna(lat) and pd.notna(lon):  # Ensure latitude and longitude are valid numbers
                 folium.Marker(
                         location=[lat, lon],
-                icon=folium.Icon(icon='cloud')  # Using a different icon ('cloud' in this case)
-            ).add_to(m)
+                        radius=5,  # Adjust the radius as needed
+                        color='blue',
+                        fill=True,
+                        fill_color='blue'
+                ).add_to(m)
 
         # Streamlit title
         st.title("Tweet Locations Map")
 
         # Display the map in the Streamlit app
-        st_folium(m, key="unique_key_for_map")
+        st_folium(m, width=700, height=400, key="unique_key_for_map")
 
         # Sentiment Analysis
         st.write("")
