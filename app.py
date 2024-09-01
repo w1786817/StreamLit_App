@@ -15,17 +15,18 @@ import string
 from nltk.corpus import wordnet as wn
 import ast
 
-# Download NLTK data only if not already downloaded
 @st.cache_data
 def download_nltk_resources():
-    nltk.download('vader_lexicon')
-    nltk.download('punkt')
-    nltk.download('stopwords')
-    nltk.download('averaged_perceptron_tagger')
-    nltk.download('maxent_ne_chunker')
-    nltk.download('words')
-    nltk.download('wordnet')
-    nltk.download('omw-1.4')  # For synonym extraction
+    nltk_resources = [
+        'vader_lexicon', 'punkt', 'stopwords', 
+        'averaged_perceptron_tagger', 'maxent_ne_chunker', 
+        'words', 'wordnet', 'omw-1.4'
+    ]
+    for resource in nltk_resources:
+        try:
+            nltk.data.find(f'corpora/{resource}')
+        except LookupError:
+            nltk.download(resource)
 
 download_nltk_resources()
 
