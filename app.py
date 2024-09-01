@@ -72,13 +72,12 @@ if uploaded_file is not None:
         st.write("")
         st.header("Geospatial Analysis with Map Markers")
 
-        #Init map
-        m = folium.Map()
         # Extract latitude and longitude
         final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0])
         final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1])
         min_lat, max_lat = final_df['latitude'].min(), final_df['latitude'].max()
         min_lon, max_lon = final_df['longitude'].min(), final_df['longitude'].max()
+        m = folium.Map()
         # Adjust the map to fit all coordinates using the fit_bounds method
         m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
 
