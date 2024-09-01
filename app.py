@@ -15,15 +15,20 @@ import string
 from nltk.corpus import wordnet as wn
 import ast
 
-# Download NLTK data
-nltk.download('vader_lexicon')
-nltk.download('punkt')
-nltk.download('stopwords')
-nltk.download('averaged_perceptron_tagger')
-nltk.download('maxent_ne_chunker')
-nltk.download('words')
-nltk.download('wordnet')
-nltk.download('omw-1.4')  # Added for synonym extraction
+# Use Streamlit cache to avoid downloading multiple times
+@st.cache_data
+def download_nltk_data():
+    nltk.download('vader_lexicon')
+    nltk.download('punkt')
+    nltk.download('stopwords')
+    nltk.download('averaged_perceptron_tagger')
+    nltk.download('maxent_ne_chunker')
+    nltk.download('words')
+    nltk.download('wordnet')
+    nltk.download('omw-1.4')  # For synonym extraction
+
+# Download the data
+download_nltk_data()
 
 # Load SpaCy's small English model
 nlp = spacy.load('en_core_web_sm')
