@@ -78,12 +78,8 @@ if uploaded_file is not None:
         m = folium.Map(location=[final_df['latitude'].mean(), final_df['longitude'].mean()], zoom_start=10)
         heat_data = list(zip(final_df['latitude'], final_df['longitude']))
         HeatMap(heat_data, radius=8).add_to(m)
-
-        # Streamlit title
         st.title("Twitter Data Heatmap")
-
-        # Display the map in the Streamlit app
-        st_folium(m, width=700, height=500)
+        st_folium(m)
         st.write("success")
 
         # Sentiment Analysis
