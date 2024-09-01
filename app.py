@@ -15,14 +15,19 @@ import string
 from nltk.corpus import wordnet as wn
 import ast
 
-nltk.download('vader_lexicon')
-nltk.download('punkt')
-nltk.download('stopwords')
-nltk.download('averaged_perceptron_tagger')
-nltk.download('maxent_ne_chunker')
-nltk.download('words')
-nltk.download('wordnet')
-nltk.download('omw-1.4')  # For synonym extraction
+# Download NLTK data only if not already downloaded
+@st.cache_data
+def download_nltk_resources():
+    nltk.download('vader_lexicon')
+    nltk.download('punkt')
+    nltk.download('stopwords')
+    nltk.download('averaged_perceptron_tagger')
+    nltk.download('maxent_ne_chunker')
+    nltk.download('words')
+    nltk.download('wordnet')
+    nltk.download('omw-1.4')  # For synonym extraction
+
+download_nltk_resources()
 
 # Load SpaCy's small English model
 nlp = spacy.load('en_core_web_sm')
@@ -64,16 +69,18 @@ if uploaded_file is not None:
         # Geospatial Analysis
         st.write("")
         st.header("Geospatial Analysis")
-        final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0] if isinstance(x, list) else None)
-        final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1] if isinstance(x, list) else None)
+        final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0] if isinstance(x, list) and len(x) > 0 else None)
+        final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1] if isinstance(x, list) and len(x) > 1 else None)
         final_df = final_df.dropna(subset=['latitude', 'longitude'])
 
-        map_center = [final_df['latitude'].mean(), final_df['longitude'].mean()]
-        m = folium.Map(location=map_center, zoom_start=6)
-        for lat, lon in zip(final_df['latitude'], final_df['longitude']):
-            folium.Marker(location=[lat, lon]).add_to(m)
-
-        st_folium(m, width=700, height=500)
+        if not final_df.empty:
+            map_center = [final_df['latitude'].mean(), final_df['longitude'].mean()]
+            m = folium.Map(location=map_center, zoom_start=6)
+            for lat, lon in zip(final_df['latitude'], final_df['longitude']):
+                folium.Marker(location=[lat, lon]).add_to(m)
+            st_folium(m, width=700, height=500)
+        else:
+            st.warning("No geospatial data available to display.")
 
         # Sentiment Analysis
         st.write("")
@@ -174,7 +181,6 @@ if uploaded_file is not None:
 
         # Combine the sighting locations with the date and time
         sightings_df['location_time'] = sightings_df.apply(lambda row: list(zip(row['sighting_locations'], [row['created_at']] * len(row['sighting_locations']))), axis=1)
-
         st.write(sightings_df[['full_text', 'sighting_locations', 'location_time']].head())
 
         # Visualizing Locations and Counts
@@ -184,53 +190,61 @@ if uploaded_file is not None:
         location_counts_df = location_counts.reset_index()
         location_counts_df.columns = ['Location', 'Count']
 
-        plt.figure(figsize=(12, 6))
-        sns.barplot(x='Count', y='Location', hue='Location', data=location_counts_df, palette='viridis', dodge=False)
-        plt.title('Number of Mentions per Location for Nikol Angelova')
-        plt.xlabel('Number of Mentions')
-        plt.ylabel('Location')
-        st.pyplot(plt)
+        if not location_counts_df.empty:
+            plt.figure(figsize=(12, 6))
+            sns.barplot(x='Count', y='Location', hue='Location', data=location_counts_df, palette='viridis', dodge=False)
+            plt.title('Number of Mentions per Location for Nikol Angelova')
+            plt.xlabel('Number of Mentions')
+            plt.ylabel('Location')
+            st.pyplot(plt)
+        else:
+            st.warning("No location data available to display.")
 
         # Temporal Pattern of Sightings
         st.write("")
         st.subheader("Temporal Pattern of Sightings")
         date_format = '%a %b %d %H:%M:%S %z %Y'
-        relevant_tweets_df['date'] = pd.to_datetime(relevant_tweets_df['created_at'], format=date_format).dt.date
-        daily_counts = relevant_tweets_df.groupby('date').size().reset_index(name='Count')
+        sightings_df['date'] = pd.to_datetime(sightings_df['created_at'], format=date_format).dt.date
+        daily_counts = sightings_df.groupby('date').size().reset_index(name='Count')
 
-        plt.figure(figsize=(12, 6))
-        sns.lineplot(x='date', y='Count', data=daily_counts, marker='o')
-        plt.title('Temporal Pattern of Sightings')
-        plt.xlabel('Date')
-        plt.ylabel('Number of Sightings')
-        plt.xticks(rotation=45)
-        st.pyplot(plt)
+        if not daily_counts.empty:
+            plt.figure(figsize=(12, 6))
+            sns.lineplot(x='date', y='Count', data=daily_counts, marker='o')
+            plt.title('Temporal Pattern of Sightings')
+            plt.xlabel('Date')
+            plt.ylabel('Number of Sightings')
+            plt.xticks(rotation=45)
+            st.pyplot(plt)
+        else:
+            st.warning("No sightings data available to display over time.")
 
-        # Heatmap
+        # Heatmap of Sightings Over Time by Location
         st.write("")
         st.subheader("Heatmap of Sightings Over Time by Location")
-        sightings_df['date'] = pd.to_datetime(sightings_df['created_at'], format=date_format).dt.date
         time_location_counts_sightings = sightings_df.explode('sighting_locations').groupby(['date', 'sighting_locations']).size().reset_index(name='Count')
         time_location_pivot = time_location_counts_sightings.pivot(index='date', columns='sighting_locations', values='Count').fillna(0)
- 
-        plt.figure(figsize=(16, 10))
-        sns.heatmap(
-            time_location_pivot,
-            cmap='RdYlGn',
-            linewidths=0.5,
-            linecolor='white',
-            annot=True,
-            fmt=".0f",
-            cbar_kws={'label': 'Number of Sightings'},
-            square=True
-        )
-        plt.title('Heatmap of Sightings Over Time by Location')
-        plt.xlabel('Location')
-        plt.ylabel('Date')
-        plt.xticks(rotation=45, ha='right')
-        plt.yticks(rotation=0)
-        plt.tight_layout()
-        st.pyplot(plt)
+
+        if not time_location_pivot.empty:
+            plt.figure(figsize=(16, 10))
+            sns.heatmap(
+                time_location_pivot,
+                cmap='RdYlGn',
+                linewidths=0.5,
+                linecolor='white',
+                annot=True,
+                fmt=".0f",
+                cbar_kws={'label': 'Number of Sightings'},
+                square=True
+            )
+            plt.title('Heatmap of Sightings Over Time by Location')
+            plt.xlabel('Location')
+            plt.ylabel('Date')
+            plt.xticks(rotation=45, ha='right')
+            plt.yticks(rotation=0)
+            plt.tight_layout()
+            st.pyplot(plt)
+        else:
+            st.warning("No data available to generate a heatmap of sightings.")
 
         # Named Entity Recognition for Names
         st.write("")
@@ -268,13 +282,16 @@ if uploaded_file is not None:
         # Display the DataFrame with identified names and their counts
         st.dataframe(name_df)
 
-        plt.figure(figsize=(10, 6))
-        plt.bar(name_df['Name'], name_df['Count'], color='skyblue')
-        plt.xlabel('Names')
-        plt.ylabel('Count')
-        plt.title('Frequency of Identified Names in Tweets')
-        plt.xticks(rotation=45, ha='right')
-        st.pyplot(plt)
+        if not name_df.empty:
+            plt.figure(figsize=(10, 6))
+            plt.bar(name_df['Name'], name_df['Count'], color='skyblue')
+            plt.xlabel('Names')
+            plt.ylabel('Count')
+            plt.title('Frequency of Identified Names in Tweets')
+            plt.xticks(rotation=45, ha='right')
+            st.pyplot(plt)
+        else:
+            st.warning("No names found to display.")
 
         # Updated Hashtag Extraction and Visualization with Time Trend
         st.write("")
@@ -289,7 +306,6 @@ if uploaded_file is not None:
                     else:
                         return ast.literal_eval(x)
                 except (ValueError, SyntaxError) as e:
-                    # Handle the error if it cannot be parsed
                     st.warning(f"Error parsing hashtags: {e}")
                     return []
             else:
@@ -306,13 +322,16 @@ if uploaded_file is not None:
         top_hashtags = hashtag_counts.most_common(top_n)
         hashtags, counts = zip(*top_hashtags)
 
-        plt.figure(figsize=(10, 6))
-        plt.barh(hashtags, counts, color='skyblue')
-        plt.xlabel('Frequency')
-        plt.ylabel('Hashtags')
-        plt.title('Top 20 Hashtags by Frequency')
-        plt.gca().invert_yaxis()  # To display the highest counts on top
-        st.pyplot(plt)  # Display in Streamlit
+        if len(top_hashtags) > 0:
+            plt.figure(figsize=(10, 6))
+            plt.barh(hashtags, counts, color='skyblue')
+            plt.xlabel('Frequency')
+            plt.ylabel('Hashtags')
+            plt.title('Top 20 Hashtags by Frequency')
+            plt.gca().invert_yaxis()  # To display the highest counts on top
+            st.pyplot(plt)
+        else:
+            st.warning("No hashtags found to display.")
 
         # Step 3b: Visualize hashtag usage over time
         top_hashtag_list = [hashtag for hashtag, count in top_hashtags]
@@ -320,18 +339,18 @@ if uploaded_file is not None:
         hashtag_df_top['created_at'] = pd.to_datetime(hashtag_df_top['created_at'], format='%a %b %d %H:%M:%S %z %Y', errors='coerce')
         hashtag_time_counts = hashtag_df_top.groupby([hashtag_df_top['created_at'].dt.date, 'hashtag']).size().unstack(fill_value=0)
 
-        # Step 4: Plot time series for top hashtags
-        st.write("")
-        plt.figure(figsize=(15, 8))
-        for hashtag in top_hashtag_list:
-            plt.plot(hashtag_time_counts.index, hashtag_time_counts[hashtag], label=f'#{hashtag}')
-
-        plt.xlabel('Date')
-        plt.ylabel('Number of Occurrences')
-        plt.title('Hashtag Usage Over Time')
-        plt.legend(title='Hashtags')
-        plt.xticks(rotation=45)
-        st.pyplot(plt)  # Display in Streamlit
+        if not hashtag_time_counts.empty:
+            plt.figure(figsize=(15, 8))
+            for hashtag in top_hashtag_list:
+                plt.plot(hashtag_time_counts.index, hashtag_time_counts[hashtag], label=f'#{hashtag}')
+            plt.xlabel('Date')
+            plt.ylabel('Number of Occurrences')
+            plt.title('Hashtag Usage Over Time')
+            plt.legend(title='Hashtags')
+            plt.xticks(rotation=45)
+            st.pyplot(plt)
+        else:
+            st.warning("No hashtag data available to display over time.")
 
         # Keyword Analysis
         st.write("")
@@ -371,7 +390,6 @@ if uploaded_file is not None:
 
         # Filter the DataFrame to include only relevant tweets (predicted_label = 1)
         relevant_tweets = new_data[new_data['predicted_label'] == 1].copy()
-
         # Extract relevant columns: full_text, retweet_count, favorite_count, and entities.urls
         def extract_url(entities_urls):
             try:
@@ -381,13 +399,14 @@ if uploaded_file is not None:
             except (json.JSONDecodeError, KeyError, TypeError) as e:
                 st.warning(f"Error parsing URL: {e}")
             return None
-            
-        relevant_tweets['url'] = relevant_tweets['entities.urls'].apply(extract_url)    
+
+        # Extract URLs and ensure numerical columns are properly converted
+        relevant_tweets['url'] = relevant_tweets['entities.urls'].apply(extract_url)
         df_relevant = relevant_tweets[['full_text', 'retweet_count', 'favorite_count', 'url']].copy()
 
-        # Convert retweet_count and favorite_count to integers using .loc
-        df_relevant['retweet_count'] = df_relevant['retweet_count'].astype(int, errors='ignore')
-        df_relevant['favorite_count'] = df_relevant['favorite_count'].astype(int, errors='ignore')
+        # Convert retweet_count and favorite_count to integers, handling any potential errors
+        df_relevant['retweet_count'] = pd.to_numeric(df_relevant['retweet_count'], errors='coerce').fillna(0).astype(int)
+        df_relevant['favorite_count'] = pd.to_numeric(df_relevant['favorite_count'], errors='coerce').fillna(0).astype(int)
 
         # Sort by retweet_count and favorite_count to get the top 10 tweets
         top_retweeted = df_relevant.sort_values(by='retweet_count', ascending=False).head(10)
@@ -395,10 +414,11 @@ if uploaded_file is not None:
         
         st.write("")
         st.subheader("Top 10 Most Retweeted Relevant Tweets")
-        st.table(top_retweeted)
+        st.table(top_retweeted[['full_text', 'retweet_count', 'url']])
+
         st.write("")
         st.subheader("Top 10 Most Liked Relevant Tweets")
-        st.table(top_liked)
+        st.table(top_liked[['full_text', 'favorite_count', 'url']])
 
         st.success("Report generated successfully!")
 
@@ -406,4 +426,3 @@ if uploaded_file is not None:
         st.error(f"An error occurred: {e}")
 
 # End of the Streamlit app
-
