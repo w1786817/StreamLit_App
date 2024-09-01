@@ -85,6 +85,9 @@ if uploaded_file is not None:
                 location=[row['latitude'], row['longitude']],
                 popup=f"Latitude: {row['latitude']}, Longitude: {row['longitude']}"
             ).add_to(m)
+
+        # Display the map in the Streamlit app
+        st_folium(m, width=700, height=500)
     
         # Sentiment Analysis
         st.write("")
