@@ -18,7 +18,7 @@ import ast
 @st.cache_data
 def download_nltk_resources():
     nltk_resources = [
-        'vader_lexicon', 'punkt', 'stopwords', 
+        'vader_lexicon', 'punkt', 'punkt_tab', 'stopwords', 
         'averaged_perceptron_tagger', 'maxent_ne_chunker', 
         'words', 'wordnet', 'omw-1.4'
     ]
