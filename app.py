@@ -317,7 +317,7 @@ if uploaded_file is not None:
         # Step 3b: Visualize hashtag usage over time
         top_hashtag_list = [hashtag for hashtag, count in top_hashtags]
         hashtag_df_top = hashtag_df[hashtag_df['hashtag'].isin(top_hashtag_list)]
-        hashtag_time_counts = hashtag_df_top.groupby([hashtag_df_top['created_at'].dt.date, 'hashtag']).size().unstack(fill_value=0)
+        hashtag_time_counts = hashtag_df_top.groupby(([hashtag_df_top['created_at'], format=date_format).dt.date, 'hashtag']).size().unstack(fill_value=0)
 
         # Step 4: Plot time series for top hashtags
         st.write("")
