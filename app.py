@@ -75,16 +75,14 @@ if uploaded_file is not None:
         # Extract latitude and longitude
         final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0])
         final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1])
-        final_df = final_df.dropna(subset=['latitude', 'longitude'])
+        #heat_data = list(zip(final_df['latitude'], final_df['longitude']))
         m = folium.Map(location=[final_df['latitude'].mean(), final_df['longitude'].mean()], zoom_start=10)
-        
-        # Add markers to the map
-        for index, row in final_df.iterrows():
-            folium.Marker(
-                location=[row['latitude'], row['longitude']],
-                popup=f"Location: ({row['latitude']}, {row['longitude']})",
-                icon=folium.Icon(color='blue', icon='info-sign')
-            ).add_to(m)
+
+        for lat, lon in zip(final_df['latitude'], final_df['longitude']):
+            folium.Marker(location=[lat, lon]).add_to(m) 
+
+        # Streamlit title
+        st.title("Twitter Data Heatmap")
 
         # Display the map in the Streamlit app
         st_folium(m, width=700, height=500)
