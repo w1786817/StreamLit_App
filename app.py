@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 import folium
+from folium.plugins import HeatMapWithTime
 from streamlit_folium import st_folium
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import re
@@ -67,17 +68,27 @@ if uploaded_file is not None:
         st.write(final_df.head())
         st.write(final_df.columns)
 
-        # Geospatial Analysis
+        # Geospatial Analysis with Time-Based Heatmap
         st.write("")
-        st.header("Geospatial Analysis")
+        st.header("Geospatial Analysis with Time-Based Heatmap")
         final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0] if isinstance(x, list) else None)
         final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1] if isinstance(x, list) else None)
         final_df = final_df.dropna(subset=['latitude', 'longitude'])
 
+        # Convert 'created_at' to datetime
+        date_format = '%a %b %d %H:%M:%S %z %Y'
+        final_df['created_at'] = pd.to_datetime(final_df['created_at'], format=date_format)
+
+        # Prepare data for HeatMapWithTime
+        heat_data = []
+        for time, frame in final_df.groupby('created_at'):
+            heat_data.append([[row['latitude'], row['longitude']] for index, row in frame.iterrows()])
+
         map_center = [final_df['latitude'].mean(), final_df['longitude'].mean()]
         m = folium.Map(location=map_center, zoom_start=6)
-        for lat, lon in zip(final_df['latitude'], final_df['longitude']):
-            folium.Marker(location=[lat, lon]).add_to(m)
+
+        # Add HeatMapWithTime
+        HeatMapWithTime(heat_data, radius=8, auto_play=True, max_opacity=0.8).add_to(m)
 
         st_folium(m, width=700, height=500)
 
