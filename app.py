@@ -81,7 +81,6 @@ if uploaded_file is not None:
         st.title("Twitter Data Heatmap")
         st_folium(m)
         st.write("success")
-
         # Sentiment Analysis
         st.write("")
         st.header("Sentiment Analysis")
