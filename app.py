@@ -299,7 +299,6 @@ if uploaded_file is not None:
         # Step 1: Extract hashtags and timestamps
         df['entities.hashtags'] = df['entities.hashtags'].astype(str)
         df['hashtags'] = df['entities.hashtags'].apply(parse_hashtags)
-        date_format = '%a %b %d %H:%M:%S %z %Y'
         df['created_at'] = pd.to_datetime(df['created_at'], format=date_format).dt.date
         hashtag_time_pairs = [(hashtag['text'], row['created_at']) for index, row in df.iterrows() if isinstance(row['hashtags'], list) for hashtag in row['hashtags']]
         hashtag_df = pd.DataFrame(hashtag_time_pairs, columns=['hashtag', 'created_at'])
