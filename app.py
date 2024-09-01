@@ -70,18 +70,16 @@ if uploaded_file is not None:
         # Geospatial Analysis
         st.write("")
         st.header("Geospatial Analysis")
-        final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0] if isinstance(x, list) and len(x) > 0 else None)
-        final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1] if isinstance(x, list) and len(x) > 1 else None)
+        final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0] if isinstance(x, list) else None)
+        final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1] if isinstance(x, list) else None)
         final_df = final_df.dropna(subset=['latitude', 'longitude'])
 
-        if not final_df.empty:
-            map_center = [final_df['latitude'].mean(), final_df['longitude'].mean()]
-            m = folium.Map(location=map_center, zoom_start=6)
-            for lat, lon in zip(final_df['latitude'], final_df['longitude']):
-                folium.Marker(location=[lat, lon]).add_to(m)
-            st_folium(m, width=700, height=500)
-        else:
-            st.warning("No geospatial data available to display.")
+        map_center = [final_df['latitude'].mean(), final_df['longitude'].mean()]
+        m = folium.Map(location=map_center, zoom_start=6)
+        for lat, lon in zip(final_df['latitude'], final_df['longitude']):
+            folium.Marker(location=[lat, lon]).add_to(m)
+
+        st_folium(m, width=700, height=500)
 
         # Sentiment Analysis
         st.write("")
