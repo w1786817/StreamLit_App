@@ -15,6 +15,9 @@ import spacy
 import string
 from nltk.corpus import wordnet as wn
 import ast
+from sklearn.preprocessing import MinMaxScaler
+import pydeck as pdk
+import numpy as np
 
 @st.cache_data
 def download_nltk_resources():
@@ -62,29 +65,64 @@ if uploaded_file is not None:
         # Step 4: Combine the JSON DataFrame with the original DataFrame if needed
         df = df.drop(columns=['Tweet JSON'])
         final_df = pd.concat([df, json_df], axis=1)
-        st.title("Normalized Dataset")
         df = final_df
 
         st.write("Data Loaded and Normalized:")
         st.write(final_df.head())
-        st.title("Columns")
         st.write(final_df.columns)
-
-        # Geo Analysis
-        st.write("")
-        st.header("Geospatial Analysis for Users' Awarness")
         
-        # Extract latitude and longitude
-        final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0])
-        final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1])
-        min_lat, max_lat = final_df['latitude'].min(), final_df['latitude'].max()
-        min_lon, max_lon = final_df['longitude'].min(), final_df['longitude'].max()
-        m = folium.Map()
-        m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
-        for lat, lon in zip(final_df['latitude'], final_df['longitude']):
-            folium.Marker(location=[lat, lon]).add_to(m) 
-        st_folium(m)
-        st.write("map generated")
+        # Interactive Map for User Awareness using PyDeck
+        st.write("")
+        st.header("Geospatial Awareness - Tweet Locations")
+
+        # Extract latitude and longitude for mapping
+        df['latitude'] = df['geo.coordinates'].apply(lambda x: x[0])
+        df['longitude'] = df['geo.coordinates'].apply(lambda x: x[1])
+
+        # Calculate the center of the map
+        mean_lat = df['latitude'].mean()
+        mean_lon = df['longitude'].mean()
+
+        # Calculate the bounding box
+        min_lat, max_lat = df['latitude'].min(), df['latitude'].max()
+        min_lon, max_lon = df['longitude'].min(), df['longitude'].max()
+
+        # Calculate dynamic zoom level based on the bounding box size
+        lat_range = max_lat - min_lat
+        lon_range = max_lon - min_lon
+        max_range = max(lat_range, lon_range)
+        zoom = 11 - np.log(max_range + 1)  # Adjust zoom based on range size
+        
+        # Set up PyDeck map layer with markers
+        layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=df,
+            get_position=["longitude", "latitude"],
+            get_color="[255, 0, 0, 160]",  # Red color for markers
+            get_radius=10000,  # radius in meters
+            pickable=True,
+            tooltip=True
+        )
+
+        # Set up PyDeck view state for automated focus
+        view_state = pdk.ViewState(
+            latitude=mean_lat,
+            longitude=mean_lon,
+            zoom=zoom,
+            pitch=0
+        )
+
+        # Create PyDeck deck
+        r = pdk.Deck(
+            layers=[layer],
+            initial_view_state=view_state,
+            map_style='mapbox://styles/mapbox/light-v10',
+            tooltip={"text": "{full_text}\Post: {post}"}
+        )
+
+        # Display the map in Streamlit
+        st.pydeck_chart(r)        
+        
         # Sentiment Analysis
         st.write("")
         st.header("Sentiment Analysis")
@@ -110,6 +148,79 @@ if uploaded_file is not None:
 
         st.write("Sentiment Counts:")
         st.bar_chart(sentiment_counts)
+        
+        # Geovisualization with sentiment score
+        df['latitude'] = df['geo.coordinates'].apply(lambda x: x[0])
+        df['longitude'] = df['geo.coordinates'].apply(lambda x: x[1])
+        
+        # Convert sentiment compound scores to colors
+        df['sentiment_compound'] = df['sentiment'].apply(lambda x: x['compound'])
+
+        # Normalize sentiment compound scores to the range [0, 1]
+        scaler = MinMaxScaler()
+        df['normalized_sentiment'] = scaler.fit_transform(df[['sentiment_compound']])
+
+        # Convert timestamp to datetime format and keep full datetime (assuming 'created_at' column exists)
+        date_format = '%a %b %d %H:%M:%S %z %Y'
+        df['timestamp'] = pd.to_datetime(df['created_at'], format = date_format)
+
+        # Convert timestamp to milliseconds since Unix epoch
+        df['timestamp_ms'] = df['timestamp'].astype('int64') // 10**6
+
+        # Define the color range based on sentiment
+        def sentiment_to_color(sentiment):
+            if sentiment >= 0.05:
+                return [0, 255, 0]  # Green for positive sentiment
+            elif sentiment > -0.05:
+                return [255, 255, 0]  # Yellow for neutral sentiment
+            else:
+                return [255, 0, 0]  # Red for negative sentiment
+
+        df['color'] = df['sentiment_compound'].apply(sentiment_to_color)
+
+        # Set up PyDeck map layer with corrected parameters
+        layer = pdk.Layer(
+            "ScatterplotLayer",
+            data=df,
+            get_position=["longitude", "latitude"],  # Use direct references to column names
+            get_color="color",  # Correct string format for column reference
+            get_radius=20000,  # radius in meters
+            pickable=True,
+            extruded=False,
+            get_time="timestamp_ms"  # Use direct reference to the column name
+        )
+
+        # Set up PyDeck view
+        view_state = pdk.ViewState(
+            latitude=df['latitude'].mean(),
+            longitude=df['longitude'].mean(),
+            zoom=3,
+            pitch=0
+        )
+
+        # Create the deck.gl map
+        r = pdk.Deck(
+            layers=[layer],
+            initial_view_state=view_state,
+            map_style='mapbox://styles/mapbox/light-v10',
+            tooltip={"text": "{full_text}\nSentiment: {sentiment_category}"}
+        )
+
+        st.header("Users Awareness with Sentiment")
+        # Display the map in Streamlit
+        st.pydeck_chart(r)
+        
+        #awarness before sentiment
+        #min_lat, max_lat = df['latitude'].min(), df['latitude'].max()
+        #min_lon, max_lon = df['longitude'].min(), df['longitude'].max()
+        #m = folium.Map()
+        #m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
+        #for lat, lon in zip(df['latitude'], df['longitude']):
+        #    folium.Marker(location=[lat, lon]).add_to(m) 
+        #st_folium(m) 
+        #st.write("map generated")
+        # Sentiment Analysis
+        st.write("")
 
         # Filter Out Negative/Aggressive/Spammy Tweets
         df['is_negative_or_spammy'] = df['sentiment_category'] == 'Negative'
@@ -122,14 +233,14 @@ if uploaded_file is not None:
         new_data['cleaned_text'] = new_data['full_text'].apply(clean_tweet)
         new_data_tfidf = vectorizer.transform(new_data['cleaned_text'])
         new_data['predicted_label'] = classifier.predict(new_data_tfidf)
-        new_data.to_csv('new_predicted_tweets.csv', index=False)
         st.write("Prediction Completed:")
         st.write(new_data[['full_text', 'predicted_label']].tail())
 
         # Updated NER for Sightings and Locations using SpaCy
         st.write("")
+        relevant_tweets_df = new_data[new_data['predicted_label'] == 1].copy()        
+        st.write("")
         st.header("Named Entity Recognition (NER) for Sightings and Locations")
-        relevant_tweets_df = new_data[new_data['predicted_label'] == 1].copy()
 
         # Function to expand keywords with synonyms using WordNet
         def expand_keywords_with_synonyms(keywords):
@@ -168,7 +279,7 @@ if uploaded_file is not None:
             doc = nlp(combined_text)
             
             # Extract locations from text
-            locations = [ent.text for ent in doc.ents if ent.label_ == 'GPE']  # 'GPE' stands for Geopolitical Entity
+            locations = [ent.text for ent in doc.ents if ent.label_ == 'GPE']
             
             # Check if the text contains expanded sighting keywords and has any identified locations
             if sighting_keywords_pattern.search(combined_text) and locations:
@@ -179,14 +290,30 @@ if uploaded_file is not None:
         # Apply the function to identify locations only for sighting-related tweets
         relevant_tweets_df['sighting_locations'] = relevant_tweets_df['full_text'].apply(identify_sightings_and_locations)
 
+        # Create a list of unique locations extracted using NER
+        unique_locations = sorted(set(location for locations in relevant_tweets_df['sighting_locations'] for location in locations))
+
+        # Add a Streamlit selectbox to allow user selection of location
+        selected_location = st.selectbox('Select a location to filter tweets:', ['All'] + unique_locations)
+
+        # Filter the DataFrame to include only tweets from the selected location
+        if selected_location != 'All':
+            filtered_tweets_df = relevant_tweets_df[relevant_tweets_df['sighting_locations'].apply(lambda locations: selected_location in locations)].copy()
+        else:
+            filtered_tweets_df = relevant_tweets_df.copy()  # If "All" is selected, use all data
+
+        # Display the filtered DataFrame based on the selected location
+        st.write(filtered_tweets_df[['full_text', 'sighting_locations']].head())
+
+        # Perform remaining analyses based on the filtered DataFrame
         # Filter out only the rows where sightings were identified (non-empty sighting_locations)
-        sightings_df = relevant_tweets_df[relevant_tweets_df['sighting_locations'].apply(lambda x: len(x) > 0)].copy()
+        sightings_df = filtered_tweets_df[filtered_tweets_df['sighting_locations'].apply(lambda x: len(x) > 0)].copy()
 
         # Combine the sighting locations with the date and time
         sightings_df['location_time'] = sightings_df.apply(lambda row: list(zip(row['sighting_locations'], [row['created_at']] * len(row['sighting_locations']))), axis=1)
         st.write(sightings_df[['full_text', 'sighting_locations', 'location_time']].head())
 
-        # Visualizing Locations and Counts
+        # Visualizing Locations and Counts for the filtered DataFrame
         st.subheader("Location Mentions")
         all_locations = sightings_df['sighting_locations'].explode()
         location_counts = all_locations.value_counts()
@@ -196,14 +323,14 @@ if uploaded_file is not None:
         if not location_counts_df.empty:
             plt.figure(figsize=(12, 6))
             sns.barplot(x='Count', y='Location', hue='Location', data=location_counts_df, palette='viridis', dodge=False)
-            plt.title('Number of Mentions per Location for Nikol Angelova')
+            plt.title(f'Number of Mentions per Location for {selected_location}')
             plt.xlabel('Number of Mentions')
             plt.ylabel('Location')
             st.pyplot(plt)
         else:
             st.warning("No location data available to display.")
 
-        # Temporal Pattern of Sightings
+        # Temporal Pattern of Sightings for the filtered DataFrame
         st.write("")
         st.subheader("Temporal Pattern of Sightings")
         date_format = '%a %b %d %H:%M:%S %z %Y'
@@ -221,7 +348,7 @@ if uploaded_file is not None:
         else:
             st.warning("No sightings data available to display over time.")
 
-        # Heatmap of Sightings Over Time by Location
+        # Heatmap of Sightings Over Time by Location for the filtered DataFrame
         st.write("")
         st.subheader("Heatmap of Sightings Over Time by Location")
         time_location_counts_sightings = sightings_df.explode('sighting_locations').groupby(['date', 'sighting_locations']).size().reset_index(name='Count')
@@ -272,11 +399,11 @@ if uploaded_file is not None:
             
             return names
 
-        # Apply the function to extract names
-        final_df['identified_names'] = final_df['full_text'].apply(extract_names_spacy)
+        # Apply the function to extract names for the filtered DataFrame
+        filtered_tweets_df['identified_names'] = filtered_tweets_df['full_text'].apply(extract_names_spacy)
 
-        # Flatten the list of names and count their occurrences
-        all_names = [name for names in final_df['identified_names'] for name in names]
+        # Flatten the list of names and count their occurrences for the filtered DataFrame
+        all_names = [name for names in filtered_tweets_df['identified_names'] for name in names]
         name_counts = Counter(all_names)
 
         # Convert the counts to a DataFrame for easier plotting
@@ -314,11 +441,11 @@ if uploaded_file is not None:
             else:
                 return []
 
-        # Step 1: Extract hashtags and timestamps
-        df['entities.hashtags'] = df['entities.hashtags'].astype(str)
-        df['hashtags'] = df['entities.hashtags'].apply(parse_hashtags)
-        df['created_at'] = pd.to_datetime(df['created_at'], format=date_format).dt.date
-        hashtag_time_pairs = [(hashtag['text'], row['created_at']) for index, row in df.iterrows() if isinstance(row['hashtags'], list) for hashtag in row['hashtags']]
+        # Step 1: Extract hashtags and timestamps for the filtered DataFrame
+        filtered_tweets_df['entities.hashtags'] = filtered_tweets_df['entities.hashtags'].astype(str)
+        filtered_tweets_df['hashtags'] = filtered_tweets_df['entities.hashtags'].apply(parse_hashtags)
+        filtered_tweets_df['created_at'] = pd.to_datetime(filtered_tweets_df['created_at'], format=date_format).dt.date
+        hashtag_time_pairs = [(hashtag['text'], row['created_at']) for index, row in filtered_tweets_df.iterrows() if isinstance(row['hashtags'], list) for hashtag in row['hashtags']]
         hashtag_df = pd.DataFrame(hashtag_time_pairs, columns=['hashtag', 'created_at'])
         hashtag_counts = Counter(hashtag_df['hashtag'])
         top_n = 20  # Display top 20 hashtags
@@ -336,7 +463,7 @@ if uploaded_file is not None:
         else:
             st.warning("No hashtags found to display.")
 
-        # Step 3b: Visualize hashtag usage over time
+        # Step 3b: Visualize hashtag usage over time for the filtered DataFrame
         top_hashtag_list = [hashtag for hashtag, count in top_hashtags]
         hashtag_df_top = hashtag_df[hashtag_df['hashtag'].isin(top_hashtag_list)]
         hashtag_df_top['created_at'] = pd.to_datetime(hashtag_df_top['created_at'], format='%a %b %d %H:%M:%S %z %Y', errors='coerce')
@@ -355,7 +482,7 @@ if uploaded_file is not None:
         else:
             st.warning("No hashtag data available to display over time.")
 
-        # Keyword Analysis
+        # Keyword Analysis for the filtered DataFrame
         st.write("")
         st.header("Top Keywords in Tweets")
 
@@ -372,7 +499,7 @@ if uploaded_file is not None:
             tokens = [word for word in tokens if word not in stop_words and word not in punctuation]
             return tokens
 
-        tokens = relevant_tweets_df['full_text'].apply(preprocess)
+        tokens = filtered_tweets_df['full_text'].apply(preprocess)
         all_words = [word for tweet in tokens for word in tweet]
         word_freq = Counter(all_words)
         most_common = word_freq.most_common(20)
@@ -392,36 +519,41 @@ if uploaded_file is not None:
         st.header("Top 10 Most Retweeted and Liked Tweets")
 
         # Filter the DataFrame to include only relevant tweets (predicted_label = 1)
-        relevant_tweets = new_data[new_data['predicted_label'] == 1].copy()
-        # Extract relevant columns: full_text, retweet_count, favorite_count, and entities.urls
-        def extract_url(entities_urls):
-            try:
-                urls = json.loads(entities_urls) if isinstance(entities_urls, str) else entities_urls
-                if isinstance(urls, list) and len(urls) > 0:
-                    return urls[0]['expanded_url']
-            except (json.JSONDecodeError, KeyError, TypeError) as e:
-                st.warning(f"Error parsing URL: {e}")
-            return None
+        relevant_tweets = filtered_tweets_df.copy()
 
-        # Extract URLs and ensure numerical columns are properly converted
-        relevant_tweets['url'] = relevant_tweets['entities.urls'].apply(extract_url)
-        df_relevant = relevant_tweets[['full_text', 'retweet_count', 'favorite_count', 'url']].copy()
+        # Ensure retweet_count and favorite_count columns are available
+        if 'retweet_count' in relevant_tweets.columns and 'favorite_count' in relevant_tweets.columns:
+            # Extract relevant columns: full_text, retweet_count, favorite_count, and entities.urls
+            def extract_url(entities_urls):
+                try:
+                    urls = json.loads(entities_urls) if isinstance(entities_urls, str) else entities_urls
+                    if isinstance(urls, list) and len(urls) > 0:
+                        return urls[0]['expanded_url']
+                except (json.JSONDecodeError, KeyError, TypeError) as e:
+                    st.warning(f"Error parsing URL: {e}")
+                return None
 
-        # Convert retweet_count and favorite_count to integers, handling any potential errors
-        df_relevant['retweet_count'] = pd.to_numeric(df_relevant['retweet_count'], errors='coerce').fillna(0).astype(int)
-        df_relevant['favorite_count'] = pd.to_numeric(df_relevant['favorite_count'], errors='coerce').fillna(0).astype(int)
+            # Extract URLs and ensure numerical columns are properly converted
+            relevant_tweets['url'] = relevant_tweets['entities.urls'].apply(extract_url)
+            df_relevant = relevant_tweets[['full_text', 'retweet_count', 'favorite_count', 'url']].copy()
 
-        # Sort by retweet_count and favorite_count to get the top 10 tweets
-        top_retweeted = df_relevant.sort_values(by='retweet_count', ascending=False).head(10)
-        top_liked = df_relevant.sort_values(by='favorite_count', ascending=False).head(10)
-        
-        st.write("")
-        st.subheader("Top 10 Most Retweeted Relevant Tweets")
-        st.table(top_retweeted[['full_text', 'retweet_count', 'url']])
+            # Convert retweet_count and favorite_count to integers, handling any potential errors
+            df_relevant['retweet_count'] = pd.to_numeric(df_relevant['retweet_count'], errors='coerce').fillna(0).astype(int)
+            df_relevant['favorite_count'] = pd.to_numeric(df_relevant['favorite_count'], errors='coerce').fillna(0).astype(int)
 
-        st.write("")
-        st.subheader("Top 10 Most Liked Relevant Tweets")
-        st.table(top_liked[['full_text', 'favorite_count', 'url']])
+            # Sort by retweet_count and favorite_count to get the top 10 tweets
+            top_retweeted = df_relevant.sort_values(by='retweet_count', ascending=False).head(10)
+            top_liked = df_relevant.sort_values(by='favorite_count', ascending=False).head(10)
+
+            st.write("")
+            st.subheader("Top 10 Most Retweeted Relevant Tweets")
+            st.table(top_retweeted[['full_text', 'retweet_count', 'url']])
+
+            st.write("")
+            st.subheader("Top 10 Most Liked Relevant Tweets")
+            st.table(top_liked[['full_text', 'favorite_count', 'url']])
+        else:
+            st.warning("Retweet count or favorite count columns not found in data.")
 
         st.success("Report generated successfully!")
 
