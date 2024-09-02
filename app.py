@@ -302,9 +302,6 @@ if uploaded_file is not None:
         else:
             filtered_tweets_df = relevant_tweets_df.copy()  # If "All" is selected, use all data
 
-        # Display the filtered DataFrame based on the selected location
-        st.write(filtered_tweets_df[['full_text', 'sighting_locations']].head())
-
         # Perform remaining analyses based on the filtered DataFrame
         # Filter out only the rows where sightings were identified (non-empty sighting_locations)
         sightings_df = filtered_tweets_df[filtered_tweets_df['sighting_locations'].apply(lambda x: len(x) > 0)].copy()
