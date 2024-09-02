@@ -88,7 +88,6 @@ if uploaded_file is not None:
         st.write("map generated")
         # Sentiment Analysis
         st.write("")
-        st.header("Sentiment Analysis")
 
         def clean_tweet(text):
             text = re.sub(r'http\S+', '', text)  # Remove URLs
