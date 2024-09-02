@@ -68,10 +68,10 @@ if uploaded_file is not None:
         st.write(final_df.head())
         st.write(final_df.columns)
 
-        # Geospatial Analysis with Time-Based Heatmap
+        # Geo Analysis
         st.write("")
-        st.header("Geospatial Analysis with Time-Based Heatmap")
-
+        st.header("Geospatial Analysis for Users' Awarness")
+        st.write("*If map fails to load - Refresh")
         # Extract latitude and longitude
         final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0])
         final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1])
@@ -83,7 +83,7 @@ if uploaded_file is not None:
             folium.Marker(location=[lat, lon]).add_to(m) 
         st.title("Twitter Data Heatmap")
         st_folium(m)
-        st.write("Zoom Out App to see all locations")
+        st.write("map generated")
         # Sentiment Analysis
         st.write("")
         st.header("Sentiment Analysis")
