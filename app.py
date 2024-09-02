@@ -71,7 +71,7 @@ if uploaded_file is not None:
         # Geo Analysis
         st.write("")
         st.header("Geospatial Analysis for Users' Awarness")
-        st.write("*If map fails to load - Refresh")
+        
         # Extract latitude and longitude
         final_df['latitude'] = final_df['geo.coordinates'].apply(lambda x: x[0])
         final_df['longitude'] = final_df['geo.coordinates'].apply(lambda x: x[1])
