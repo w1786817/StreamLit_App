@@ -62,10 +62,12 @@ if uploaded_file is not None:
         # Step 4: Combine the JSON DataFrame with the original DataFrame if needed
         df = df.drop(columns=['Tweet JSON'])
         final_df = pd.concat([df, json_df], axis=1)
+        st.title("Normalized Dataset")
         df = final_df
 
         st.write("Data Loaded and Normalized:")
         st.write(final_df.head())
+        st.title("Columns")
         st.write(final_df.columns)
 
         # Geo Analysis
