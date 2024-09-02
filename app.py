@@ -83,11 +83,11 @@ if uploaded_file is not None:
         m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
         for lat, lon in zip(final_df['latitude'], final_df['longitude']):
             folium.Marker(location=[lat, lon]).add_to(m) 
-        st.title("Twitter Data Heatmap")
         st_folium(m)
         st.write("map generated")
         # Sentiment Analysis
         st.write("")
+        st.header("Sentiment Analysis")
 
         def clean_tweet(text):
             text = re.sub(r'http\S+', '', text)  # Remove URLs
