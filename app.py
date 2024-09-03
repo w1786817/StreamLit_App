@@ -73,6 +73,7 @@ if uploaded_file is not None:
         # Interactive Map for User Awareness using PyDeck
         st.write("")
         st.header("Geospatial Awareness of Users")
+        st.write("Zoom In/Out and hover on top of points to interact with the map.")
 
         # Extract latitude and longitude for mapping
         df['latitude'] = df['geo.coordinates'].apply(lambda x: x[0])
@@ -201,6 +202,7 @@ if uploaded_file is not None:
         )
 
         st.header("Users Engagement with Sentiment")
+        st.write("Zoom In/Out and hover on top of points to interact with the map.")
         # Display the map
         st.pydeck_chart(r)
         
@@ -391,6 +393,7 @@ if uploaded_file is not None:
         name_df = pd.DataFrame(name_counts.items(), columns=['Name', 'Count'])
 
         # Display the DataFrame with identified names and their counts
+        st.subheader("Identified Names")
         st.dataframe(name_df)
 
         if not name_df.empty:
@@ -400,6 +403,7 @@ if uploaded_file is not None:
             plt.ylabel('Count')
             plt.title('Frequency of Identified Names in Tweets')
             plt.xticks(rotation=45, ha='right')
+            st.subheader("Frequency of Identified Names in Tweets")
             st.pyplot(plt)
         else:
             st.warning("No names found to display.")
