@@ -222,6 +222,7 @@ if uploaded_file is not None:
         num_relevant_tweets = new_data['predicted_label'].sum()
         st.metric(label="Number of Predicted as Relevant Tweets", value=num_relevant_tweets)
         st.write("Prediction Completed where 0 stands for IRRELEVANT, 1 is RELEVANT:")
+        st.write(new_data[['full_text', 'predicted_label']].tail())
 
         # Button to download sentiment analysis results
         sentiment_csv = df[['full_text', 'cleaned_tweet', 'sentiment_category', 'sentiment_compound']]
