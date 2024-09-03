@@ -117,7 +117,7 @@ if uploaded_file is not None:
             layers=[layer],
             initial_view_state=view_state,
             map_style='mapbox://styles/mapbox/light-v10',
-            tooltip={"text": "{full_text}\Post: {post}"}
+            tooltip={"text": "{full_text}\Created at: {created_at}"}
         )
 
         # Display the map in Streamlit
