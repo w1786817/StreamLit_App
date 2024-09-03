@@ -69,29 +69,25 @@ if uploaded_file is not None:
 
         st.write("Data Loaded and Normalized:")
         st.write(final_df.head())
-        st.write(final_df.columns)
         
         # Interactive Map for User Awareness using PyDeck
         st.write("")
-        st.header("Geospatial Awareness - Tweet Locations")
+        st.header("Geospatial Awareness of Users")
 
         # Extract latitude and longitude for mapping
         df['latitude'] = df['geo.coordinates'].apply(lambda x: x[0])
         df['longitude'] = df['geo.coordinates'].apply(lambda x: x[1])
 
-        # Calculate the center of the map
         mean_lat = df['latitude'].mean()
         mean_lon = df['longitude'].mean()
 
-        # Calculate the bounding box
         min_lat, max_lat = df['latitude'].min(), df['latitude'].max()
         min_lon, max_lon = df['longitude'].min(), df['longitude'].max()
 
-        # Calculate dynamic zoom level based on the bounding box size
         lat_range = max_lat - min_lat
         lon_range = max_lon - min_lon
         max_range = max(lat_range, lon_range)
-        zoom = 11 - np.log(max_range + 1)  # Adjust zoom based on range size
+        zoom = 11 - np.log(max_range + 1)  
         
         # Set up PyDeck map layer with markers
         layer = pdk.Layer(
@@ -104,7 +100,6 @@ if uploaded_file is not None:
             tooltip=True
         )
 
-        # Set up PyDeck view state for automated focus
         view_state = pdk.ViewState(
             latitude=mean_lat,
             longitude=mean_lon,
@@ -120,7 +115,6 @@ if uploaded_file is not None:
             tooltip={"text": "{full_text}\Created at: {created_at}"}
         )
 
-        # Display the map in Streamlit
         st.pydeck_chart(r)        
         
         # Sentiment Analysis
@@ -164,7 +158,7 @@ if uploaded_file is not None:
         date_format = '%a %b %d %H:%M:%S %z %Y'
         df['timestamp'] = pd.to_datetime(df['created_at'], format = date_format)
 
-        # Convert timestamp to milliseconds since Unix epoch
+        # Convert timestamp to milliseconds
         df['timestamp_ms'] = df['timestamp'].astype('int64') // 10**6
 
         # Define the color range based on sentiment
@@ -206,20 +200,10 @@ if uploaded_file is not None:
             tooltip={"text": "{full_text}\nSentiment: {sentiment_category}"}
         )
 
-        st.header("Users Awareness with Sentiment")
-        # Display the map in Streamlit
+        st.header("Users Engagement with Sentiment")
+        # Display the map
         st.pydeck_chart(r)
         
-        #awarness before sentiment
-        #min_lat, max_lat = df['latitude'].min(), df['latitude'].max()
-        #min_lon, max_lon = df['longitude'].min(), df['longitude'].max()
-        #m = folium.Map()
-        #m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]])
-        #for lat, lon in zip(df['latitude'], df['longitude']):
-        #    folium.Marker(location=[lat, lon]).add_to(m) 
-        #st_folium(m) 
-        #st.write("map generated")
-        # Sentiment Analysis
         st.write("")
 
         # Filter Out Negative/Aggressive/Spammy Tweets
@@ -240,7 +224,7 @@ if uploaded_file is not None:
         st.write("")
         relevant_tweets_df = new_data[new_data['predicted_label'] == 1].copy()        
         st.write("")
-        st.header("Named Entity Recognition (NER) for Sightings and Locations")
+        st.header("NER Locations Related to Sightings")
 
         # Function to expand keywords with synonyms using WordNet
         def expand_keywords_with_synonyms(keywords):
@@ -287,16 +271,16 @@ if uploaded_file is not None:
             else:
                 return []  # Return an empty list if no relevant keywords or locations
 
-        # Apply the function to identify locations only for sighting-related tweets
+        # Applying the function to identify locations only for sighting-related tweets
         relevant_tweets_df['sighting_locations'] = relevant_tweets_df['full_text'].apply(identify_sightings_and_locations)
 
-        # Create a list of unique locations extracted using NER
+        # Creating a list of unique locations extracted using NER
         unique_locations = sorted(set(location for locations in relevant_tweets_df['sighting_locations'] for location in locations))
 
-        # Add a Streamlit selectbox to allow user selection of location
+        # Adding a Streamlit selectbox to allow user selection of location
         selected_location = st.selectbox('Select a location to filter tweets:', ['All'] + unique_locations)
 
-        # Filter the DataFrame to include only tweets from the selected location
+        # Filterring the DataFrame to include only tweets from the selected location
         if selected_location != 'All':
             filtered_tweets_df = relevant_tweets_df[relevant_tweets_df['sighting_locations'].apply(lambda locations: selected_location in locations)].copy()
         else:
@@ -375,7 +359,7 @@ if uploaded_file is not None:
 
         # Named Entity Recognition for Names
         st.write("")
-        st.header("Named Entity Recognition for People/Organisation Names")
+        st.header("NER for People/Organisation Names")
 
         # Function to extract person names from text including hashtags
         def extract_names_spacy(text):
@@ -396,7 +380,7 @@ if uploaded_file is not None:
             
             return names
 
-        # Apply the function to extract names for the filtered DataFrame
+        # Applying the function to extract names for the filtered DataFrame
         filtered_tweets_df['identified_names'] = filtered_tweets_df['full_text'].apply(extract_names_spacy)
 
         # Flatten the list of names and count their occurrences for the filtered DataFrame
@@ -460,7 +444,9 @@ if uploaded_file is not None:
         else:
             st.warning("No hashtags found to display.")
 
-        # Step 3b: Visualize hashtag usage over time for the filtered DataFrame
+        # Visualize hashtag usage over time for the filtered DataFrame
+        st.write("")
+        st.subheader("Hashtags Usage Over Time")
         top_hashtag_list = [hashtag for hashtag, count in top_hashtags]
         hashtag_df_top = hashtag_df[hashtag_df['hashtag'].isin(top_hashtag_list)]
         hashtag_df_top['created_at'] = pd.to_datetime(hashtag_df_top['created_at'], format='%a %b %d %H:%M:%S %z %Y', errors='coerce')
