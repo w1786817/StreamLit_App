@@ -68,7 +68,7 @@ if uploaded_file is not None:
         df = final_df
 
         st.write("Data Loaded and Normalized:")
-        st.write(final_df.head())
+        st.write(final_df.tail())
         
         # Interactive Map for User Awareness using PyDeck
         st.write("")
