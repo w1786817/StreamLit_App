@@ -396,7 +396,7 @@ if uploaded_file is not None:
             doc = nlp(combined_text)
             
             # Extract names
-            names = [ent.text for ent in doc.ents if ent.label_ == 'PERSON']
+            names = [ent.text for ent in doc.ents if ent.label_ in ('PERSON', 'ORG')]
             
             return names
 
