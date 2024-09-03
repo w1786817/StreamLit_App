@@ -222,6 +222,24 @@ if uploaded_file is not None:
         st.write("Prediction Completed:")
         st.write(new_data[['full_text', 'predicted_label']].tail())
 
+        # Button to download sentiment analysis results
+        sentiment_csv = df[['full_text', 'cleaned_tweet', 'sentiment_category', 'sentiment_compound']]
+        st.download_button(
+            label="Download Sentiment Analysis Results as CSV",
+            data=sentiment_csv.to_csv(index=False),
+            file_name='sentiment_analysis_results.csv',
+            mime='text/csv'
+        )
+
+        # Button to download classification predictions
+        classification_csv = new_data[['full_text', 'cleaned_text', 'predicted_label']]
+        st.download_button(
+            label="Download Classification Results as CSV",
+            data=classification_csv.to_csv(index=False),
+            file_name='classification_results.csv',
+            mime='text/csv'
+        )
+
         # Updated NER for Sightings and Locations using SpaCy
         st.write("")
         relevant_tweets_df = new_data[new_data['predicted_label'] == 1].copy()        
