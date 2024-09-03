@@ -219,6 +219,8 @@ if uploaded_file is not None:
         new_data['cleaned_text'] = new_data['full_text'].apply(clean_tweet)
         new_data_tfidf = vectorizer.transform(new_data['cleaned_text'])
         new_data['predicted_label'] = classifier.predict(new_data_tfidf)
+        num_relevant_tweets = new_data['predicted_label'].sum()
+        st.metric(label="Number of Predicted Relevant Tweets", value=num_relevant_tweets)
         st.write("Prediction Completed:")
         st.write(new_data[['full_text', 'predicted_label']].tail())
 
